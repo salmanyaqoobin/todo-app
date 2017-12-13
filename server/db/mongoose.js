@@ -14,3 +14,5 @@ const dbName = 'todoApp';
 mongoose.connect(url+'/'+dbName,  { useMongoClient: true });
 
 module.exports = {mongoose};
+
+//export default mongoose;

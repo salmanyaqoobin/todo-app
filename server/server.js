@@ -6,8 +6,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const {mongoose} = require('./db/mongoose');
-const {Todo} = require('./models/Todo');
-const {User} = require('./models/User');
+const {Todo} = require('./models/todo');
+const {User} = require('./models/user');
 
 var app = express();
 
@@ -22,10 +22,9 @@ app.post('/todos',(req, res)=>{
         }
     );
     todoData.save().then((doc)=>{
-        console.log('data saved', doc);
         res.send(doc);
     }, (err)=>{
-        console.log('unable to save data:', err);
+        //console.log('unable to save data:', err);
         res.status(400).send(err);
     });
 });
@@ -33,6 +32,8 @@ app.post('/todos',(req, res)=>{
 app.listen(3000, ()=>{
    console.log('App is started on port 3000');
 });
+
+module.exports = {app};
 
 //
 //
