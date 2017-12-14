@@ -41,7 +41,7 @@ MongoClient.connect(url, function(err, client) {
     console.log("Connected successfully to server");
 
     const db = client.db(dbName);
-    db.collection('Users').insertOne({
+    db.collection('users').insertOne({
         name: "Salman Yaqoob",
         age:32,
         location: "Riyadh, Malaz"
