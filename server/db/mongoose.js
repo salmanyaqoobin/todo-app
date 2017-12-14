@@ -11,7 +11,7 @@ const url = 'mongodb://localhost:27017';
 // Database Name
 const dbName = 'todoApp';
 
-mongoose.connect(process.env.MONGODB_URI || url+'/'+dbName,  { useMongoClient: true });
+mongoose.connect(process.env.MONGODB_URI ,  { useMongoClient: true });
 
 module.exports = {mongoose};
 
