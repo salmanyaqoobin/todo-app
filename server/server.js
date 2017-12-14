@@ -2,6 +2,7 @@
  * Created by Salman on 12/13/2017.
  */
 
+const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -70,6 +71,31 @@ app.delete("/todo/:id", (req, res)=>{
         res.send({todo});
     }).catch((e)=>{res.status(400).send({error:e})});
 });
+
+app.patch("/todo/:id", (req, res)=>{
+    var id = req.params.id;
+    var body = _.pick(req.body, ["title", "text", "completed"]);
+
+    if(!ObjectID.isValid(id)){
+        res.status(404).send({error: "id not valid"});
+    }
+
+    if(_.isBoolean(body.completed) && body.completed){
+        body.completedAt = Date.now();
+    } else {
+        body.completed = false;
+        body.completedAt = null;
+    }
+
+    Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo)=>{
+        if(!todo){
+            res.status(404).send({error: "id not found"});
+        }
+        res.send({todo});
+    }).catch((e)=>{res.status(400).send(e)});
+});
+
+
 
 
 app.listen(port, ()=>{
