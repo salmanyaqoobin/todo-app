@@ -22,12 +22,13 @@ const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
-app.post('/todos',(req, res)=>{
+app.post('/todos',authenticate, (req, res)=>{
     var todoData = new Todo(
         {
             title: req.body.title,
             text: req.body.text,
-            completed: false
+            completed: false,
+            _creator: req.user._id
         }
     );
     todoData.save().then((doc)=>{
@@ -38,20 +39,25 @@ app.post('/todos',(req, res)=>{
     });
 });
 
-app.get("/todos", (req, res)=>{
-    Todo.find().then((todos)=>{
+app.get("/todos", authenticate, (req, res)=>{
+    Todo.find({
+        _creator: req.user._id
+    }).then((todos)=>{
         res.send(todos);
     }, (err)=>{
         res.status(400).send(err);
     });
 });
 
-app.get("/todo/:id", (req, res)=>{
+app.get("/todo/:id", authenticate, (req, res)=>{
     var id  = req.params.id;
     if(!ObjectID.isValid(id)){
         return res.status(404).send({error: "id is not valid"});
     }
-    Todo.findById(id).then((todo)=>{
+    Todo.findOne({
+        _id: id,
+        _creator: req.user._id
+    }).then((todo)=>{
         if(!todo){
             return res.status(404).send({error: "todo not found"});
         }
@@ -62,13 +68,16 @@ app.get("/todo/:id", (req, res)=>{
 });
 
 
-app.delete("/todo/:id", (req, res)=>{
+app.delete("/todo/:id", authenticate, (req, res)=>{
     var id = req.params.id;
     if(!ObjectID.isValid(id)){
         return res.status(404).send({error: "id is not valid"});
     }
 
-    Todo.findByIdAndRemove(id).then((todo)=>{
+    Todo.findOneAndRemove({
+        _id: id,
+        _creator: req.user._id
+    }).then((todo)=>{
         if(!todo){
             return res.status(404).send({error: "todo id not found"});
         }
@@ -76,7 +85,7 @@ app.delete("/todo/:id", (req, res)=>{
     }).catch((e)=>{res.status(400).send({error:e})});
 });
 
-app.patch("/todo/:id", (req, res)=>{
+app.patch("/todo/:id", authenticate, (req, res)=>{
     var id = req.params.id;
     var body = _.pick(req.body, ["title", "text", "completed"]);
 
@@ -91,7 +100,10 @@ app.patch("/todo/:id", (req, res)=>{
         body.completedAt = null;
     }
 
-    Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo)=>{
+    Todo.findOneAndUpdate({
+        _id: id,
+        _creator: req.user._id
+    }, {$set: body}, {new: true}).then((todo)=>{
         if(!todo){
             res.status(404).send({error: "id not found"});
         }
