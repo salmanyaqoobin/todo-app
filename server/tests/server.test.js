@@ -237,6 +237,8 @@ describe('POST /users', ()=>{
                 expect(user.email).toEqual(email);
                 expect(user.password).not.toEqual(password);
                 done();
+            }).catch((e)=>{
+                done(e);
             });
 
         });
@@ -264,3 +266,87 @@ describe('POST /users', ()=>{
             .end(done);
     });
 });
+
+describe("POST /users/login", ()=>{
+
+    it("should login user with valid credentials", (done)=>{
+
+        request(app)
+            .post("/users/login")
+            .send({
+                email: users[1].email,
+                password: users[1].password
+            })
+            .expect(200)
+            .expect((res)=>{
+                expect(res.headers).toHaveProperty('x-auth');
+            })
+            .end((err, res)=>{
+                if(err){
+                    return done(err);
+                }
+
+                User.findById(users[1]._id).then((user)=>{
+                    var newObject = new Object({
+                        _id:user.tokens[0]._id,
+                        access: "auth",
+                        token: res.headers['x-auth']
+                    });
+                    expect(user.tokens[0].access).toEqual("auth");
+                    expect(user.tokens[0]._id).toEqual(user.tokens[0]._id);
+                    expect(user.tokens[0].token).toEqual(res.headers['x-auth']);
+                    done();
+                }).catch((e)=>{
+                    done(e);
+                });
+            });
+    });
+
+    it("should reject invalid login credentials", (done)=>{
+        request(app)
+            .post("/users/login")
+            .send({
+                email: users[1].email,
+                password: users[1].password+" 1"
+            })
+            .expect(400)
+            .expect((res)=>{
+                expect(res.headers).not.toHaveProperty('x-auth');
+            })
+            .end((err, res)=>{
+                if(err){
+                    return done(err);
+                }
+
+                done();
+            });
+    });
+
+
+});
+
+describe("DELETE /users/me/token", ()=>{
+
+    it("should logout with valid token", (done)=>{
+        request(app)
+            .delete("/users/me/token")
+            .set({'x-auth': users[0].tokens[0].token})
+            .expect(200)
+            .end((err, res)=>{
+                if(err){
+                    return done(err);
+                }
+
+                User.findById(users[0]._id).then((user)=>{
+                    if(!user){
+                        return done({error:"user not find with id"});
+                    }
+                    expect(user.tokens.length).toBe(0);
+                    done();
+                }).catch((e)=>{done(e);});
+            });
+    });
+
+});
+
+

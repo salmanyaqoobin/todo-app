@@ -52,10 +52,10 @@ const populateTodos = (done)=>{
 
 const populateUsers = (done)=>{
     User.remove({}).then(()=> {
-        //var userOne = new User(users[0]).save();
-        //var userTwo = new User(users[1]).save();
-        //return Promise().all([userOne, userTwo]);
-        return User.insertMany(users);
+        var userOne = new User(users[0]).save();
+        var userTwo = new User(users[1]).save();
+        return Promise.all([userOne, userTwo]);
+        //return User.insertMany(users);
     }).then(()=>done());
 };
 
