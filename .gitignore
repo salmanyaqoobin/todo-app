@@ -1,3 +1,4 @@
 node_modules/
 .idea
 server.log
+/server/config/config.json
