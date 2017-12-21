@@ -4,8 +4,7 @@
 
 var mongoose = require('mongoose');
 
-
-var Todo = mongoose.model('Todo', {
+var TodoScheme = new mongoose.Schema({
     title: {
         type: String,
         trim: true,
@@ -31,5 +30,7 @@ var Todo = mongoose.model('Todo', {
         required: true
     }
 });
+
+var Todo = mongoose.model('Todo', TodoScheme);
 
 module.exports = {Todo};

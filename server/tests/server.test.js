@@ -149,7 +149,7 @@ describe("DELETE /todo/:id",()=>{
             }
             Todo.findById(newObjextID).then((todo)=>{
                 if(!todo){
-                    expect(todo).toBeNull();
+                    expect(todo).toBeFalsy();
                     done();
                 }
             }).catch((e)=>{done(e)});
@@ -163,10 +163,19 @@ describe("DELETE /todo/:id",()=>{
             .delete(`/todo/${newObjextID}`)
             .set("x-auth", users[0].tokens[0].token)
             .expect(404)
-            //.expect((res)=>{
-            //    expect(res.body.todo._id).toBe(newObjextID);
-            //})
-            .end(done);
+            .end((err, res)=>{
+                if(err){
+                    return done(err);
+                }
+
+                Todo.findById(newObjextID).then((todo)=>{
+                    expect(todo).toBeTruthy();
+                    done();
+                }).catch((e)=>{
+                    done(e);
+                });
+
+            });
     });
 
     it("should return 404 with id not found", (done)=>{
@@ -191,32 +200,44 @@ describe("DELETE /todo/:id",()=>{
 describe("PATCH /todo/:id", ()=>{
 
     it("should update todo", (done)=>{
-        var newObjectID = todos[1]._id.toHexString();
+        var newObjectID = todos[0]._id.toHexString();
         var body = {completed: true, text: "updated text hehehhe"};
-        request(app)
-            .patch(`/todo/${newObjectID}`)
-            .set("x-auth", users[1].tokens[0].token)
-            .send(body)
-            .expect(200)
-            .expect((res)=>{
-                expect(res.body.todo.text).toBe(body.text);
-                expect(res.body.todo.completed).toBeTruthy();
-            })
-        .end(done);
+
+
+        try {
+            request(app)
+                .patch(`/todo/${newObjectID}`)
+                .set("x-auth", users[0].tokens[0].token)
+                .send(body)
+                .expect(200)
+                .expect((res)=>{
+                    expect(res.body.todo.text).toBe(body.text);
+                    expect(res.body.todo.completed).toBeTruthy();
+                })
+                .end(done);
+        } catch (e) {
+            return done(e);
+        }
     });
 
     it("should not update todo for another user", (done)=>{
         var newObjectID = todos[1]._id.toHexString();
         var body = {completed: true, text: "updated text hehehhe"};
-        request(app)
-            .patch(`/todo/${newObjectID}`)
-            .set("x-auth", users[0].tokens[0].token)
-            .send(body)
-            .expect(404)
-            .expect((res)=>{
-                expect(res.body).toEqual({"error": "id not found"});
-            })
-            .end(done);
+
+        try {
+            request(app)
+                .patch(`/todo/${newObjectID}`)
+                .set("x-auth", users[0].tokens[0].token)
+                .send(body)
+                .expect(404)
+                .expect((res)=>{
+                    expect(res.body).toEqual({"error": "id not found"});
+                })
+                .end(done);
+        } catch (e) {
+            return done(e);
+        }
+
     });
 
 
@@ -237,6 +258,62 @@ describe("PATCH /todo/:id", ()=>{
     });
 
 
+});
+
+
+describe('POST /users', ()=>{
+    it('should create user',(done)=>{
+        var name = "salman";
+        var email = "email@email.com";
+        var password = "passwordabc123";
+
+        request(app)
+            .post("/users")
+            .send({name, email, password})
+            .expect(200)
+            .expect((res)=>{
+                expect(res.header).toHaveProperty('x-auth');
+                expect(res.body).toHaveProperty('_id');
+                expect(res.body.email).toBe(email);
+            })
+            .end((err)=>{
+                if(err){
+                    return done(err);
+                }
+
+                User.findOne({email}).then((user)=>{
+                    expect(user).toBeTruthy();
+                    expect(user.email).toEqual(email);
+                    expect(user.password).not.toEqual(password);
+                    done();
+                }).catch((e)=>{
+                    done(e);
+                });
+
+            });
+
+
+    });
+
+    it('should not create user with invalid data',(done)=>{
+        request(app)
+            .post("/users")
+            .send({name:"salman", email:'sxample', password:'asd'})
+            .expect(400)
+            .expect((res)=>{
+            })
+            .end(done);
+    });
+
+    it('should not create user, if email already created',(done)=>{
+        request(app)
+            .post("/users")
+            .send({name:"salman", email:users[0].email, password:'123465432125'})
+            .expect(400)
+            .expect((res)=>{
+            })
+            .end(done);
+    });
 });
 
 describe('GET /users/me', ()=>{
@@ -264,60 +341,6 @@ describe('GET /users/me', ()=>{
 
 });
 
-describe('POST /users', ()=>{
-    it('should create user',(done)=>{
-        var name = "salman";
-        var email = "email@email.com";
-        var password = "passwordabc123";
-
-        request(app)
-            .post("/users")
-            .send({name, email, password})
-            .expect(200)
-            .expect((res)=>{
-                expect(res.header).toHaveProperty('x-auth');
-                expect(res.body).toHaveProperty('_id');
-                expect(res.body.email).toBe(email);
-            })
-        .end((err)=>{
-            if(err){
-                return done(err);
-            }
-
-            User.findOne({email}).then((user)=>{
-                expect(user).not.toBeNull();
-                expect(user.email).toEqual(email);
-                expect(user.password).not.toEqual(password);
-                done();
-            }).catch((e)=>{
-                done(e);
-            });
-
-        });
-
-
-    });
-
-    it('should not create user with invalid data',(done)=>{
-        request(app)
-            .post("/users")
-            .send({name:"salman", email:'sxample', password:'asd'})
-            .expect(400)
-            .expect((res)=>{
-            })
-            .end(done);
-    });
-
-    it('should not create user, if email already created',(done)=>{
-        request(app)
-            .post("/users")
-            .send({name:"salman", email:users[0].email, password:'123465432125'})
-            .expect(400)
-            .expect((res)=>{
-            })
-            .end(done);
-    });
-});
 
 describe("POST /users/login", ()=>{
 
@@ -331,7 +354,7 @@ describe("POST /users/login", ()=>{
             })
             .expect(200)
             .expect((res)=>{
-                expect(res.headers).toHaveProperty('x-auth');
+                expect(res.headers['x-auth']).toBeTruthy();
             })
             .end((err, res)=>{
                 if(err){
@@ -339,10 +362,13 @@ describe("POST /users/login", ()=>{
                 }
 
                 User.findById(users[1]._id).then((user)=>{
-
-                    expect(user.tokens[0].access).toEqual("auth");
-                    expect(user.tokens[0]._id).toEqual(user.tokens[0]._id);
-                    expect(user.tokens[1].token).toEqual(res.headers['x-auth']);
+                    expect(user.toObject().tokens[1]).toMatchObject({
+                        access: "auth",
+                        token: res.headers['x-auth']
+                    });
+                    //expect(user.tokens[0].access).toEqual("auth");
+                    //expect(user.tokens[0]._id).toEqual(user.tokens[0]._id);
+                    //expect(user.tokens[1].token).toEqual(res.headers['x-auth']);
                     done();
                 }).catch((e)=>{
                     done(e);
@@ -359,7 +385,7 @@ describe("POST /users/login", ()=>{
             })
             .expect(400)
             .expect((res)=>{
-                expect(res.headers).not.toHaveProperty('x-auth');
+                expect(res.headers['x-auth']).toBeFalsy();
             })
             .end((err, res)=>{
                 if(err){
